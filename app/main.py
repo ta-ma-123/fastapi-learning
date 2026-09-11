@@ -1,4 +1,20 @@
 from fastapi import FastAPI
+from pydantic import BaseModel, Field
+
+
+# 商品登録時に受け取るデータの構造を定義する
+class ProductCreate(BaseModel):
+    name: str
+    price: int = Field(gt=0)
+    description: str | None = None
+
+
+# STEP3 自力課題
+class UserCreate(BaseModel):
+    name: str
+    age: int = Field(gt=0)
+    email: str | None = None
+
 
 # FastAPIアプリケーションを作成する
 app = FastAPI()
@@ -56,3 +72,17 @@ def get_book_reviews(
         "limit": limit,
         "offset": offset,
     }
+
+
+# STEP3 POST /products
+@app.post("/products")
+def create_product(product: ProductCreate):
+    # リクエストボディから受け取った商品データをそのまま返す
+    return product
+
+
+# STEP3 自力課題 POST /users
+@app.post("/users")
+def create_user(user: UserCreate):
+    # リクエストボディから受け取ったユーザーデータをそのまま返す
+    return user
