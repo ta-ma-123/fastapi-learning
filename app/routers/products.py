@@ -1,8 +1,10 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 
-from app.dependencies import get_pagination
+from app.dependencies import get_db, get_pagination
+from app.models.product import Product
 from app.schemas.products import ProductCreate, ProductUpdate
 
 router = APIRouter()
@@ -46,20 +48,29 @@ def get_products(
     "/products",
     status_code=status.HTTP_201_CREATED,
 )
-def create_product(product: ProductCreate):
-    # 現在の商品IDの最大値から、新しい商品IDを作成する
-    new_product_id = max(products.keys(), default=0) + 1
+def create_product(
+    product_data: ProductCreate,
+    db: Annotated[Session, Depends(get_db)],
+):
+    # リクエストデータをもとにSQLAlchemy Modelを作成する
+    product = Product(
+        name=product_data.name,
+        price=product_data.price,
+    )
 
-    # Pydanticモデルを辞書に変換する
-    product_data = product.model_dump()
+    # 新しい商品をSessionの管理対象に追加する
+    db.add(product)
 
-    # 新しい商品を保存する
-    products[new_product_id] = product_data
+    # DBへ変更を確定する
+    db.commit()
 
-    # 作成された商品IDと商品データを返す
+    # DBで確定した最新の内容を取得する
+    db.refresh(product)
+
     return {
-        "id": new_product_id,
-        **product_data,
+        "id": product.id,
+        "name": product.name,
+        "price": product.price,
     }
 
 
@@ -71,45 +82,122 @@ def create_product(product: ProductCreate):
         }
     }
 )
-def get_product(product_id: int):
-    # 指定された商品IDの商品を取得する
-    product = products.get(product_id)
+def get_product(
+    product_id: int,
+    db: Annotated[Session, Depends(get_db)],
+):
+    # 主キーを指定してproductsテーブルから商品を取得する
+    product = db.get(Product, product_id)
 
-    # 商品が存在しない場合は404エラーを返す
     if product is None:
         raise HTTPException(
             status_code=404,
             detail="Product not found",
         )
 
-    return product
+    return {
+        "id": product.id,
+        "name": product.name,
+        "price": product.price,
+    }
 
 
 @router.put("/products/{product_id}")
-def update_product(product_id: int, product: ProductUpdate):
-    # 商品が存在しない場合は404エラーを返す
-    if product_id not in products:
+def update_product(
+    product_id: int,
+    product_data: ProductUpdate,
+    db: Annotated[Session, Depends(get_db)],
+):
+    # 更新対象の商品をDBから取得する
+    product = db.get(Product, product_id)
+
+    if product is None:
         raise HTTPException(
             status_code=404,
             detail="Product not found",
         )
 
-    # 指定された商品IDのデータを更新する
-    products[product_id] = product.model_dump()
+    # リクエストされた内容でModelを更新する
+    product.name = product_data.name
+    product.price = product_data.price
 
-    return products[product_id]
+    # DBへ変更を確定する
+    db.commit()
+
+    # DBで確定した最新の内容を取得する
+    db.refresh(product)
+
+    return {
+        "id": product.id,
+        "name": product.name,
+        "price": product.price,
+    }
 
 
 @router.delete("/products/{product_id}")
-def delete_product(product_id: int):
-    # 商品が存在しない場合は404エラーを返す
-    if product_id not in products:
+def delete_product(
+    product_id: int,
+    db: Annotated[Session, Depends(get_db)],
+):
+    # 削除対象の商品をDBから取得する
+    product = db.get(Product, product_id)
+
+    if product is None:
         raise HTTPException(
             status_code=404,
             detail="Product not found",
         )
 
-    # 指定された商品IDのデータを削除する
-    deleted_product = products.pop(product_id)
+    # 商品を削除対象にする
+    db.delete(product)
 
-    return deleted_product
+    # DBへ変更を確定する
+    db.commit()
+
+    return {
+        "message": "Product deleted",
+    }
+
+
+@router.post(
+    "/products/{product_id}/duplicate",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        404: {
+            "description": "Product not found",
+        }
+    }
+)
+def duplicate_product(
+    product_id: int,
+    db: Annotated[Session, Depends(get_db)],
+):
+    # 主キーを指定してproductsテーブルから商品を取得する
+    product = db.get(Product, product_id)
+
+    if product is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found",
+        )
+
+    # 取得した商品をもとにSQLAlchemy Modelを作成する
+    new_product = Product(
+        name=product.name,
+        price=product.price,
+    )
+
+    # 新しい商品をSessionの管理対象に追加する
+    db.add(new_product)
+
+    # DBへ変更を確定する
+    db.commit()
+
+    # DBで確定した最新の内容を取得する
+    db.refresh(new_product)
+
+    return {
+        "id": new_product.id,
+        "name": new_product.name,
+        "price": new_product.price,
+    }
