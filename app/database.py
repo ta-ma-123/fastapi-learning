@@ -1,19 +1,14 @@
-import os
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-# Docker Composeから渡されている環境変数から
-# PostgreSQLへの接続URLを取得する
-DATABASE_URL = os.environ["DATABASE_URL"]
+from app.config import settings
 
-# SQLAlchemyがDBへ接続するためのEngineを作成する
-engine = create_engine(DATABASE_URL)
+# 設定クラスからDB接続先を取得する
+engine = create_engine(settings.database_url)
 
-# DB操作に使用するSessionを生成するための設定
+# DB操作で使用するSessionを生成する
 SessionLocal = sessionmaker(bind=engine)
 
 
-# すべてのSQLAlchemy Modelが継承する基底クラス
 class Base(DeclarativeBase):
     pass
