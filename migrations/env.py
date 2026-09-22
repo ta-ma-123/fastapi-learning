@@ -63,12 +63,24 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode.
+    """オンラインモードでマイグレーションを実行する。"""
 
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
+    # pytestなどの外部プログラムからConnectionが渡されているか確認する
+    connection = config.attributes.get("connection")
 
-    """
+    if connection is not None:
+        # 渡されたConnectionを使用してマイグレーションする
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+        )
+
+        with context.begin_transaction():
+            context.run_migrations()
+
+        return
+
+    # Connectionが渡されていなければ、通常のDB接続を使用する
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
@@ -77,13 +89,15 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
         )
 
         with context.begin_transaction():
             context.run_migrations()
 
 
+# 実行モードに応じてマイグレーション処理を呼び出す
 if context.is_offline_mode():
     run_migrations_offline()
 else:

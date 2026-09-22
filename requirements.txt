@@ -6,4 +6,8 @@ pydantic-settings
 pytest
 pytest-asyncio
 httpx
+httpx2
 ruff
+
+# Starlette 1.6.0のBlockingPortal非推奨警告を回避するための暫定固定
+anyio==4.14.2
