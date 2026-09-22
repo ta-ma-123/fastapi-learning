@@ -42,5 +42,31 @@ services:
       timeout: 5s
       retries: 10
 
+  # テスト専用のPostgreSQL
+  test-db:
+    image: postgres:17
+
+    environment:
+      POSTGRES_DB: fastapi_step8_test
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    # 開発用DBとは別の保存領域を使用する
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+
+    # DBが接続可能になるまでの状態を確認する
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER} -d fastapi_step8_test"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
 volumes:
   postgres_data:
+  postgres_test_data:
