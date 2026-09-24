@@ -1,0 +1,27 @@
+# Git関連
+.git/
+
+# Pythonの仮想環境
+.venv/
+venv/
+
+# Pythonのキャッシュ
+**/__pycache__/
+**/*.py[cod]
+
+# テスト・静的解析のキャッシュ
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# VS Codeの設定
+.vscode/
+
+# 環境変数（秘密情報の混入防止）
+.env
+.env.*
+!.env.example
+
+# ログファイル
+*.log

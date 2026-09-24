@@ -1,0 +1,77 @@
+# 開発用Composeとコンテナ・ボリュームを分離する
+name: fastapi-learning-run
+
+services:
+  app:
+    # 実行用Dockerfileからイメージをビルドする
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    # 実行時に環境変数を読み込む
+    env_file:
+      - .env
+
+    # Windows側の8001番ポートからAPIにアクセスできるようにする
+    ports:
+      - "127.0.0.1:8001:8000"
+
+    # PostgreSQLが接続可能になってから起動する
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17
+
+    restart: unless-stopped
+
+    # PostgreSQLの初期設定
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    # DBのデータをコンテナ外のボリュームに保存する
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    # PostgreSQLが接続可能か確認する
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # pytest専用のPostgreSQL
+  test-db:
+    image: postgres:17
+
+    # テスト専用DBの初期設定
+    environment:
+      POSTGRES_DB: fastapi_step8_test
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    # 通常のDBとは別のボリュームを使用する
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+
+    # テスト用DBが接続可能か確認する
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER} -d fastapi_step8_test"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
+  postgres_test_data:
