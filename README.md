@@ -43,3 +43,17 @@ Dev Containers: Rebuild and Reopen in Container
 ```
 Dev Containers: Reopen Folder Locally
 ```
+
+## pytest実行コマンド
+
+### テストケース指定
+```
+python -m pytest tests/[ファイル名]::[テスト関数名] -v -s
+```
+
+- `-s`：標準出力を表示させる
+
+### テストディレクトリ配下を一括実行
+```
+python -m pytest tests -v
+```

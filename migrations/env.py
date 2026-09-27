@@ -2,6 +2,7 @@ import os
 
 from app.database import Base
 from app.models.product import Product  # noqa: F401
+from app.models.task import Task  # noqa: F401
 
 from logging.config import fileConfig
 

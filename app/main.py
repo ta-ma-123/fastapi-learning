@@ -6,6 +6,7 @@ from app.config import settings
 from app.routers.books import router as books_router
 from app.routers.execution_demo import router as execution_demo_router
 from app.routers.products import router as products_router
+from app.routers.tasks import router as tasks_router
 
 
 # STEP3 自力課題
@@ -35,6 +36,8 @@ app.include_router(products_router)
 app.include_router(books_router)
 # 同期処理と非同期処理検証用APIのRouterをFastAPIアプリへ登録する
 app.include_router(execution_demo_router)
+# タスクAPIのRouterをFastAPIアプリへ登録する
+app.include_router(tasks_router)
 
 
 # GET / にアクセスされたときの処理を定義する
